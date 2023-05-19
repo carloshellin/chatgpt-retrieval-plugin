@@ -3,12 +3,13 @@ import openai
 import os
 
 from tenacity import retry, wait_random_exponential, stop_after_attempt
+from sentence_transformers import SentenceTransformer
 
 
 @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(3))
 def get_embeddings(texts: List[str]) -> List[List[float]]:
     """
-    Embed texts using OpenAI's ada model.
+    Embed texts using SBERT's all-MiniLM-L6-v2 model.
 
     Args:
         texts: The list of texts to embed.
@@ -17,23 +18,13 @@ def get_embeddings(texts: List[str]) -> List[List[float]]:
         A list of embeddings, each of which is a list of floats.
 
     Raises:
-        Exception: If the OpenAI API call fails.
+        Exception: If the embedder call fails.
     """
-    # Call the OpenAI API to get the embeddings
-    # NOTE: Azure Open AI requires deployment id
-    deployment = os.environ.get("OPENAI_EMBEDDINGMODEL_DEPLOYMENTID")
 
-    response = {}
-    if deployment == None:
-        response = openai.Embedding.create(input=texts, model="text-embedding-ada-002")
-    else:
-        response = openai.Embedding.create(input=texts, deployment_id=deployment)
-    
-    # Extract the embedding data from the response
-    data = response["data"]  # type: ignore
+    embedder = SentenceTransformer('all-MiniLM-L6-v2')
 
     # Return the embeddings as a list of lists of floats
-    return [result["embedding"] for result in data]
+    return embedder.encode(texts).tolist()
 
 
 @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(3))
